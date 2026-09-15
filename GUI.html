@@ -1,0 +1,1672 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Network Security Analyzer</title>
+
+    <style>
+        /* --- RESET & GLOBAL VARIABLES --- */
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+
+        :root {
+            --bg-dark: #010408;
+            --panel-bg: #071019;
+            --border-color: #16354f;
+            --border-soft: #102a40;
+            --blue-main: #168cff;
+            --blue-light: #5abaff;
+            --red-main: #ff304d;
+            --red-light: #ff7888;
+            --green-main: #25d895;
+            --text-main: #edf5fb;
+            --text-muted: #91a7b8;
+        }
+
+        html,
+        body {
+            min-height: 100vh;
+            background-color: var(--bg-dark) !important;
+            color: var(--text-main);
+            font-family: "Segoe UI", system-ui, -apple-system, sans-serif;
+            font-size: 16px;
+            overflow-x: hidden;
+        }
+
+        body {
+            background: radial-gradient(circle at 50% 30%, rgba(18, 75, 120, 0.35) 0%, rgba(6, 20, 34, 0.8) 55%, var(--bg-dark) 100%), var(--bg-dark) !important;
+            background-attachment: fixed !important;
+        }
+
+        body::before {
+            content: "";
+            position: fixed;
+            inset: 0;
+            background-image: linear-gradient(rgba(22, 140, 255, 0.05) 1px, transparent 1px), linear-gradient(90deg, rgba(22, 140, 255, 0.05) 1px, transparent 1px);
+            background-size: 38px 38px;
+            pointer-events: none;
+            z-index: -1;
+        }
+
+        .app {
+            width: min(1480px, 94%);
+            margin: 0 auto;
+            padding: 30px 0 55px;
+        }
+
+        /* --- HEADER --- */
+        .header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 28px;
+        }
+
+        .brand {
+            display: flex;
+            align-items: center;
+            gap: 15px;
+        }
+
+        .logo {
+            width: 50px;
+            height: 50px;
+            display: grid;
+            place-items: center;
+            border: 1px solid #2370a8;
+            border-radius: 13px;
+            background: #071522;
+            color: var(--blue-light);
+            font-size: 24px;
+            box-shadow: 0 0 34px rgba(22, 140, 255, .14);
+        }
+
+        .brand-title {
+            color: #fff;
+            font-size: 20px;
+            font-weight: 700;
+            letter-spacing: .6px;
+        }
+
+        .brand-subtitle {
+            margin-top: 5px;
+            color: #8fa6b7;
+            font-size: 12px;
+            letter-spacing: 1.7px;
+            text-transform: uppercase;
+        }
+
+        .system-status {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            border: 1px solid var(--border-color);
+            background: #06101a;
+            padding: 11px 15px;
+            border-radius: 9px;
+            color: #b2c4d1;
+            font-size: 12px;
+            font-weight: 600;
+            letter-spacing: 1px;
+        }
+
+        .status-dot {
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            background: var(--green-main);
+            box-shadow: 0 0 14px var(--green-main);
+        }
+
+        /* --- UPLOAD & CONFIG SECTION --- */
+        .upload-section {
+            border: 1px solid rgba(22, 140, 255, 0.25);
+            background: radial-gradient(ellipse at 50% 0%, rgba(22, 140, 255, 0.12) 0%, transparent 75%), linear-gradient(145deg, rgba(8, 22, 36, 0.65), rgba(3, 10, 18, 0.75));
+            backdrop-filter: blur(12px);
+            border-radius: 17px;
+            padding: 34px;
+            box-shadow: 0 25px 85px rgba(0, 0, 0, .65), inset 0 1px 1px rgba(255, 255, 255, 0.1);
+        }
+
+        .upload-intro {
+            text-align: center;
+            margin-bottom: 27px;
+        }
+
+        .upload-label {
+            color: var(--blue-light);
+            font-size: 12px;
+            font-weight: 700;
+            letter-spacing: 2.4px;
+            text-transform: uppercase;
+        }
+
+        .upload-title {
+            margin-top: 10px;
+            color: #fff;
+            font-size: 36px;
+            line-height: 1.2;
+            letter-spacing: -.8px;
+        }
+
+        .upload-description {
+            margin: 12px auto 0;
+            max-width: 760px;
+            color: #b6c8d4;
+            font-size: 16px;
+            line-height: 1.8;
+        }
+
+        .drop-zone {
+            min-height: 170px;
+            border: 1px dashed #276b98;
+            border-radius: 14px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            text-align: center;
+            cursor: pointer;
+            background: radial-gradient(circle at center, rgba(22, 140, 255, .12), transparent 65%), rgba(4, 14, 25, 0.4);
+            transition: background 0.25s, border-color 0.25s, box-shadow 0.25s;
+        }
+
+        .drop-zone:hover,
+        .drop-zone.dragging {
+            border-color: var(--blue-light);
+            background: radial-gradient(circle at center, rgba(22, 140, 255, .20), transparent 70%), rgba(6, 20, 36, 0.6);
+            box-shadow: inset 0 0 60px rgba(22, 140, 255, .12), 0 0 40px rgba(22, 140, 255, .18);
+        }
+
+        .upload-icon {
+            width: 52px;
+            height: 52px;
+            margin: auto;
+            display: grid;
+            place-items: center;
+            border-radius: 14px;
+            border: 1px solid #2774a8;
+            background: #061523;
+            color: var(--blue-light);
+            font-size: 22px;
+            box-shadow: 0 0 15px rgba(22, 140, 255, 0.2);
+        }
+
+        .drop-title {
+            margin-top: 12px;
+            color: #fff;
+            font-size: 16px;
+            font-weight: 600;
+        }
+
+        .drop-subtitle {
+            margin-top: 5px;
+            color: #9db2c1;
+            font-size: 12px;
+        }
+
+        .file-name {
+            min-height: 18px;
+            margin-top: 8px;
+            color: var(--blue-light);
+            font-size: 13px;
+            font-weight: 600;
+        }
+
+        #fileInput {
+            display: none;
+        }
+
+        .analyze-button {
+            display: block;
+            width: 290px;
+            height: 48px;
+            margin: 20px auto 0;
+            border: 1px solid #278fd1;
+            border-radius: 9px;
+            background: linear-gradient(120deg, #0a5ba0, var(--blue-main), #0a5ba0);
+            color: #fff;
+            font-size: 14px;
+            font-weight: 700;
+            letter-spacing: 1px;
+            cursor: pointer;
+            transition: transform 0.2s, box-shadow 0.2s;
+            box-shadow: 0 8px 28px rgba(22, 140, 255, .12);
+        }
+
+        .analyze-button:hover {
+            transform: translateY(-1px);
+            box-shadow: 0 11px 36px rgba(22, 140, 255, .24);
+        }
+
+        .analyze-button:disabled {
+            opacity: .45;
+            cursor: not-allowed;
+            transform: none;
+        }
+
+        .config-panel {
+            margin-top: 22px;
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 16px;
+            padding-top: 20px;
+            border-top: 1px solid rgba(22, 140, 255, 0.15);
+        }
+
+        .config-box {
+            background: rgba(5, 14, 24, 0.6);
+            border: 1px solid var(--border-soft);
+            border-radius: 11px;
+            padding: 16px;
+        }
+
+        .config-box-title {
+            color: var(--blue-light);
+            font-size: 11px;
+            font-weight: 700;
+            letter-spacing: 1.4px;
+            text-transform: uppercase;
+            margin-bottom: 12px;
+        }
+
+        .engine-tags {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 8px;
+        }
+
+        .engine-tag {
+            background: #091c2c;
+            border: 1px solid #1a496c;
+            color: #a2c4db;
+            padding: 5px 10px;
+            border-radius: 6px;
+            font-size: 11px;
+            font-weight: 600;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+
+        .engine-tag::before {
+            content: "✓";
+            color: var(--green-main);
+        }
+
+        .options-list {
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+        }
+
+        .option-item {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            font-size: 12px;
+            color: #b2c6d4;
+        }
+
+        /* Switch Styling */
+        .switch {
+            position: relative;
+            display: inline-block;
+            width: 36px;
+            height: 20px;
+        }
+
+        .switch input {
+            opacity: 0;
+            width: 0;
+            height: 0;
+        }
+
+        .slider {
+            position: absolute;
+            cursor: pointer;
+            inset: 0;
+            background-color: #0d2233;
+            border: 1px solid #1a4563;
+            transition: .3s;
+            border-radius: 20px;
+        }
+
+        .slider:before {
+            position: absolute;
+            content: "";
+            height: 12px;
+            width: 12px;
+            left: 3px;
+            bottom: 3px;
+            background-color: #799bb3;
+            transition: .3s;
+            border-radius: 50%;
+        }
+
+        input:checked+.slider {
+            background-color: var(--blue-main);
+            border-color: #3ca3ff;
+        }
+
+        input:checked+.slider:before {
+            transform: translateX(16px);
+            background-color: #fff;
+        }
+
+        /* --- CARDS & RESULTS --- */
+        .result {
+            display: grid;
+            grid-template-columns: .8fr 1.2fr;
+            gap: 17px;
+            margin-top: 19px;
+        }
+
+        .card {
+            border: 1px solid var(--border-color);
+            border-radius: 14px;
+            background: var(--panel-bg);
+            overflow: hidden;
+        }
+
+        .card-header {
+            min-height: 53px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 0 20px;
+            border-bottom: 1px solid var(--border-soft);
+        }
+
+        .card-title {
+            color: #b4c8d5;
+            font-size: 12px;
+            font-weight: 700;
+            letter-spacing: 1.4px;
+            text-transform: uppercase;
+        }
+
+        .card-status {
+            color: #87a5b8;
+            font-size: 10px;
+            font-weight: 700;
+            border: 1px solid #1a425e;
+            padding: 6px 9px;
+            border-radius: 6px;
+        }
+
+        .threat-body,
+        .report-body {
+            padding: 24px;
+        }
+
+        .threat-title {
+            color: #fff;
+            font-size: 27px;
+            font-weight: 700;
+        }
+
+        .threat-subtitle {
+            margin-top: 8px;
+            color: #a5b8c5;
+            font-size: 14px;
+            line-height: 1.8;
+        }
+
+        .threat-score {
+            display: flex;
+            align-items: center;
+            gap: 18px;
+            margin-top: 22px;
+        }
+
+        .score-circle {
+            width: 90px;
+            height: 90px;
+            border-radius: 50%;
+            display: grid;
+            place-items: center;
+            background: radial-gradient(circle, var(--panel-bg) 58%, transparent 60%), conic-gradient(var(--blue-main) 0deg, #0b263b 0deg);
+            box-shadow: 0 0 28px rgba(22, 140, 255, .12);
+        }
+
+        .score-circle strong {
+            color: #fff;
+            font-size: 23px;
+        }
+
+        .score-label {
+            color: #71899a;
+            font-size: 11px;
+            font-weight: 700;
+            letter-spacing: 1.3px;
+            text-transform: uppercase;
+        }
+
+        .score-description {
+            margin-top: 6px;
+            color: #c1d3df;
+            font-size: 14px;
+        }
+
+        .details {
+            margin-top: 21px;
+        }
+
+        .detail {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 11px 0;
+            border-bottom: 1px solid #10283a;
+            font-size: 13px;
+        }
+
+        .detail span {
+            color: #91a7b7;
+            font-weight: 600;
+        }
+
+        .detail strong {
+            color: #edf5fa;
+            font-size: 13px;
+        }
+
+        .report-text {
+            min-height: 210px;
+            color: #b3c5d0;
+            font-size: 15px;
+            line-height: 1.9;
+        }
+
+        .report-text.active {
+            color: #d2dfe7;
+        }
+
+        /* --- ACTIVITY LOG --- */
+        .activity {
+            margin-top: 18px;
+            border: 1px solid var(--border-color);
+            border-radius: 14px;
+            background: var(--panel-bg);
+            overflow: hidden;
+        }
+
+        .activity-list {
+            max-height: 190px;
+            overflow: hidden;
+            padding: 5px 21px;
+        }
+
+        .activity-item {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            padding: 11px 0;
+            border-bottom: 1px solid #10283a;
+            font-size: 13px;
+            line-height: 1.6;
+        }
+
+        .activity-time {
+            width: 42px;
+            color: #60798b;
+            font-family: Consolas, monospace;
+            font-size: 11px;
+        }
+
+        .activity-dot {
+            width: 7px;
+            height: 7px;
+            border-radius: 50%;
+            background: var(--blue-main);
+            box-shadow: 0 0 10px var(--blue-main);
+        }
+
+        .activity-text {
+            color: #a2b5c3;
+        }
+
+        .activity-text strong {
+            color: #edf5fa;
+        }
+
+        /* --- SIMULATION --- */
+        .simulation {
+            margin-top: 20px;
+            border: 1px solid var(--border-color);
+            border-radius: 17px;
+            background: linear-gradient(180deg, rgba(7, 17, 27, .99), rgba(3, 9, 14, .99));
+            overflow: hidden;
+        }
+
+        .sim-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 19px 23px;
+            border-bottom: 1px solid #12304a;
+        }
+
+        .sim-title {
+            color: #d1dfe8;
+            font-size: 13px;
+            font-weight: 700;
+            letter-spacing: 1.6px;
+            text-transform: uppercase;
+        }
+
+        .sim-badge {
+            color: #8db2ca;
+            font-size: 10px;
+            font-weight: 700;
+            letter-spacing: 1px;
+            border: 1px solid #1a4563;
+            padding: 6px 9px;
+            border-radius: 6px;
+        }
+
+        .sim-explanation {
+            padding: 17px 23px;
+            background: #050d15;
+            border-bottom: 1px solid var(--border-soft);
+        }
+
+        .sim-explanation-title {
+            color: #fff;
+            font-size: 13px;
+            font-weight: 700;
+            letter-spacing: 1px;
+            text-transform: uppercase;
+            margin-bottom: 7px;
+        }
+
+        .sim-explanation-text {
+            color: #b3c6d2;
+            font-size: 14px;
+            line-height: 1.8;
+        }
+
+        .attack-selector {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            padding: 17px 23px;
+            border-bottom: 1px solid var(--border-soft);
+            flex-wrap: wrap;
+        }
+
+        .selector-label {
+            color: #9db0be;
+            font-size: 12px;
+            font-weight: 700;
+            letter-spacing: 1px;
+            text-transform: uppercase;
+            margin-right: 4px;
+        }
+
+        .attack-button {
+            height: 40px;
+            padding: 0 17px;
+            border-radius: 8px;
+            border: 1px solid #1b4f72;
+            background: #071725;
+            color: #a9bfce;
+            cursor: pointer;
+            font-size: 12px;
+            font-weight: 700;
+            letter-spacing: .7px;
+            transition: border-color 0.2s, color 0.2s, background 0.2s;
+        }
+
+        .attack-button:hover {
+            border-color: var(--blue-light);
+            color: #fff;
+        }
+
+        .attack-button.active {
+            background: linear-gradient(120deg, #0a5ca2, var(--blue-main));
+            border-color: #3399d7;
+            color: #fff;
+            box-shadow: 0 0 20px rgba(22, 140, 255, .15);
+        }
+
+        .pipeline-wrapper {
+            position: relative;
+            min-height: 360px;
+            overflow: hidden;
+            border-radius: 14px;
+        }
+
+        .pipeline {
+            position: relative;
+            height: 360px;
+            overflow: hidden;
+            padding: 38px 30px;
+            background: radial-gradient(circle at 50% 50%, rgba(22, 140, 255, 0.35) 0%, rgba(8, 28, 48, 0.6) 45%, rgba(1, 4, 8, 0.98) 90%), linear-gradient(180deg, #010409 0%, #051322 50%, #010409 100%);
+            box-shadow: inset 0 0 80px rgba(0, 0, 0, 0.95), inset 0 0 15px rgba(22, 140, 255, 0.2), 0 10px 30px rgba(0, 0, 0, 0.6);
+            transition: filter .25s ease, opacity .25s ease;
+        }
+
+        .pipeline::before {
+            content: "";
+            position: absolute;
+            inset: 0;
+            background-image: linear-gradient(rgba(22, 140, 255, 0.08) 1px, transparent 1px), linear-gradient(90deg, rgba(22, 140, 255, 0.08) 1px, transparent 1px);
+            background-size: 32px 32px;
+            pointer-events: none;
+            z-index: 0;
+        }
+
+        .pipeline.paused {
+            filter: blur(1px);
+            opacity: .32;
+        }
+
+        .station-container {
+            position: relative;
+            z-index: 5;
+            height: 100%;
+            display: grid;
+            grid-template-columns: repeat(6, 1fr);
+            gap: 10px;
+        }
+
+        .station {
+            text-align: center;
+            position: relative;
+            z-index: 20;
+        }
+
+        .station-name,
+        .station-desc,
+        .station-state {
+            position: relative;
+            z-index: 21;
+        }
+
+        .station-node {
+            width: 72px;
+            height: 64px;
+            margin: 45px auto 0;
+            display: grid;
+            place-items: center;
+            position: relative;
+            overflow: hidden;
+            background: linear-gradient(145deg, #123b5b, #07131f);
+            border: 1px solid #2997d8;
+            border-radius: 8px;
+            color: var(--blue-light);
+            font-size: 17px;
+            font-weight: 700;
+            box-shadow: 0 0 18px rgba(22, 140, 255, .15), inset 0 0 12px rgba(22, 140, 255, .06);
+            transition: transform 0.18s ease, border-color 0.18s ease, box-shadow 0.18s ease;
+        }
+
+        .station-name {
+            margin-top: 15px;
+            color: #fff;
+            font-size: 15px;
+            font-weight: 700;
+            letter-spacing: .6px;
+        }
+
+        .station-desc {
+            margin: 7px auto 0;
+            max-width: 145px;
+            color: #8da5b6;
+            font-size: 12px;
+            line-height: 1.6;
+        }
+
+        .station-state {
+            margin-top: 9px;
+            color: #648297;
+            font-size: 11px;
+            font-weight: 700;
+            letter-spacing: 1px;
+            text-transform: uppercase;
+        }
+
+        .station.active .station-node {
+            transform: scale(1.06);
+            border-color: var(--blue-light);
+            box-shadow: 0 0 28px rgba(22, 140, 255, .35), inset 0 0 18px rgba(22, 140, 255, .10);
+        }
+
+        .station.active .station-state {
+            color: var(--blue-light);
+        }
+
+        .station.danger .station-node {
+            border-color: var(--red-main);
+            color: var(--red-light);
+            box-shadow: 0 0 35px rgba(255, 48, 77, .48), inset 0 0 18px rgba(255, 48, 77, .10);
+        }
+
+        .station.danger .station-state {
+            color: var(--red-light);
+        }
+
+        /* SVG Station Shapes */
+        .station[data-stage="parser"] .station-node {
+            width: 92px;
+            height: 67px;
+            background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 80' preserveAspectRatio='none'%3E%3Cdefs%3E%3ClinearGradient id='grad1' x1='0%25' y1='0%25' x2='100%25' y2='100%25'%3E%3Cstop offset='0%25' stop-color='%23184e7a'/%3E%3Cstop offset='100%25' stop-color='%23050e17'/%3E%3C/linearGradient%3E%3C/defs%3E%3Cpolygon points='25,2 75,2 98,25 98,55 75,78 25,78 2,55 2,25' fill='url(%23grad1)' stroke='%232997d8' stroke-width='1.5'/%3E%3C/svg%3E");
+            background-size: 100% 100%;
+            background-repeat: no-repeat;
+            filter: drop-shadow(0 0 10px rgba(41, 151, 216, 0.35));
+        }
+
+        .station[data-stage="tracker"] .station-node {
+            width: 92px;
+            height: 67px;
+            background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 80' preserveAspectRatio='none'%3E%3Cdefs%3E%3CradialGradient id='grad2' cx='50%25' cy='50%25' r='50%25'%3E%3Cstop offset='0%25' stop-color='%23123e5d'/%3E%3Cstop offset='70%25' stop-color='%23081722'/%3E%3C/radialGradient%3E%3C/defs%3E%3Cpolygon points='25,2 75,2 98,25 98,55 75,78 25,78 2,55 2,25' fill='url(%23grad2)' stroke='%2336a9e8' stroke-width='1.5'/%3E%3C/svg%3E");
+            background-size: 100% 100%;
+            background-repeat: no-repeat;
+            filter: drop-shadow(0 0 10px rgba(34, 160, 255, 0.35));
+        }
+
+        .station[data-stage="detection"] .station-node {
+            width: 92px;
+            height: 67px;
+            background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 80' preserveAspectRatio='none'%3E%3Cdefs%3E%3ClinearGradient id='grad-det' x1='0%25' y1='0%25' x2='100%25' y2='100%25'%3E%3Cstop offset='0%25' stop-color='%23202b55'/%3E%3Cstop offset='100%25' stop-color='%23090f21'/%3E%3C/linearGradient%3E%3C/defs%3E%3Cpolygon points='25,2 75,2 98,25 98,55 75,78 25,78 2,55 2,25' fill='url(%23grad-det)' stroke='%237c8cff' stroke-width='1.5'/%3E%3C/svg%3E");
+            background-size: 100% 100%;
+            background-repeat: no-repeat;
+            filter: drop-shadow(0 0 10px rgba(124, 140, 255, 0.35));
+        }
+
+        .station[data-stage="evidence"] .station-node {
+            width: 92px;
+            height: 67px;
+            background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 80' preserveAspectRatio='none'%3E%3Cdefs%3E%3ClinearGradient id='grad-evi' x1='0%25' y1='0%25' x2='100%25' y2='100%25'%3E%3Cstop offset='0%25' stop-color='%23173b4d'/%3E%3Cstop offset='100%25' stop-color='%2308141d'/%3E%3C/linearGradient%3E%3C/defs%3E%3Cpolygon points='25,2 75,2 98,25 98,55 75,78 25,78 2,55 2,25' fill='url(%23grad-evi)' stroke='%234ca6c9' stroke-width='1.5'/%3E%3C/svg%3E");
+            background-size: 100% 100%;
+            background-repeat: no-repeat;
+            filter: drop-shadow(0 0 10px rgba(76, 166, 201, 0.35));
+        }
+
+        .station[data-stage="alert"] .station-node {
+            width: 92px;
+            height: 67px;
+            background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 80' preserveAspectRatio='none'%3E%3Cdefs%3E%3CradialGradient id='grad-alt' cx='50%25' cy='50%25' r='50%25'%3E%3Cstop offset='0%25' stop-color='%23431c27'/%3E%3Cstop offset='72%25' stop-color='%23170b10'/%3E%3C/radialGradient%3E%3C/defs%3E%3Cpolygon points='25,2 75,2 98,25 98,55 75,78 25,78 2,55 2,25' fill='url(%23grad-alt)' stroke='%23a83245' stroke-width='1.5'/%3E%3C/svg%3E");
+            background-size: 100% 100%;
+            background-repeat: no-repeat;
+            color: #ff6478;
+            filter: drop-shadow(0 0 10px rgba(255, 48, 77, 0.35));
+        }
+
+        .station[data-stage="report"] .station-node {
+            width: 92px;
+            height: 67px;
+            background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 80' preserveAspectRatio='none'%3E%3Cdefs%3E%3ClinearGradient id='grad-rep' x1='0%25' y1='0%25' x2='100%25' y2='100%25'%3E%3Cstop offset='0%25' stop-color='%2315384b'/%3E%3Cstop offset='100%25' stop-color='%2308141e'/%3E%3C/linearGradient%3E%3C/defs%3E%3Cpolygon points='25,2 75,2 98,25 98,55 75,78 25,78 2,55 2,25' fill='url(%23grad-rep)' stroke='%234ca6c9' stroke-width='1.5'/%3E%3C/svg%3E");
+            background-size: 100% 100%;
+            background-repeat: no-repeat;
+            filter: drop-shadow(0 0 10px rgba(76, 166, 201, 0.35));
+        }
+
+        .packet-layer {
+            position: absolute;
+            inset: 0;
+            z-index: 10;
+            pointer-events: none;
+            overflow: hidden;
+        }
+
+        .packet {
+            position: absolute;
+            left: -25px;
+            min-width: 60px;
+            height: 30px;
+            padding: 0 10px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 5px;
+            border: 1px solid #36a9e8;
+            border-radius: 20px;
+            background: linear-gradient(135deg, #092842 0%, #03111c 100%);
+            color: #72ceff;
+            font-family: Consolas, monospace;
+            font-size: 8px;
+            font-weight: bold;
+            letter-spacing: .5px;
+            box-shadow: 0 0 10px rgba(34, 160, 255, 0.4), inset 0 0 6px rgba(54, 169, 232, 0.2);
+            white-space: nowrap;
+            opacity: 0;
+            transition: left 1200ms linear, background 180ms ease, border-color 180ms ease, box-shadow 180ms ease, transform 180ms ease, opacity 120ms ease;
+        }
+
+        .packet::before {
+            content: "";
+            width: 6px;
+            height: 6px;
+            border: 1px solid #38b8ff;
+            border-radius: 2px;
+            box-shadow: 0 0 5px rgba(56, 184, 255, .5);
+            flex-shrink: 0;
+        }
+
+        .packet .packet-type {
+            color: #4c8eac;
+            font-size: 6px;
+        }
+
+        .packet .packet-label {
+            color: #8ddcff;
+        }
+
+        .packet.visible {
+            opacity: 1;
+        }
+
+        .packet.suspicious {
+            border-color: #a3374d;
+            background: linear-gradient(180deg, #2a0d16, #12070c);
+            color: #ff7185;
+            box-shadow: 0 0 10px rgba(255, 64, 93, .35), inset 0 0 10px rgba(255, 50, 70, .08);
+        }
+
+        .packet.suspicious::before {
+            border-color: #ff405d;
+            box-shadow: 0 0 7px rgba(255, 64, 93, .8);
+        }
+
+        .packet.suspicious .packet-label {
+            color: #ff8294;
+        }
+
+        .packet.suspicious .packet-type {
+            color: #bd4b60;
+        }
+
+        .packet.hit {
+            transform: scale(1.3);
+        }
+
+        /* Overlays */
+        .response-overlay,
+        .report-overlay {
+            position: absolute;
+            inset: 18px;
+            z-index: 50;
+            display: none;
+            align-items: center;
+            justify-content: center;
+            background: rgba(2, 5, 8, .88);
+            backdrop-filter: blur(8px);
+            border: 1px solid #2a475d;
+            border-radius: 15px;
+        }
+
+        .report-overlay {
+            z-index: 60;
+            background: rgba(2, 5, 8, .9);
+        }
+
+        .response-overlay.show,
+        .report-overlay.show {
+            display: flex;
+            animation: overlayIn .22s ease;
+        }
+
+        @keyframes overlayIn {
+            from {
+                opacity: 0;
+                transform: scale(.985);
+            }
+
+            to {
+                opacity: 1;
+                transform: scale(1);
+            }
+        }
+
+        .response-box,
+        .report-box {
+            width: min(620px, 92%);
+            padding: 31px;
+            border: 1px solid #245375;
+            border-radius: 15px;
+            background: linear-gradient(145deg, #081723, #050b12);
+            box-shadow: 0 30px 90px rgba(0, 0, 0, .55);
+            text-align: center;
+        }
+
+        .report-box {
+            width: min(760px, 92%);
+            text-align: left;
+        }
+
+        .response-kicker {
+            color: var(--red-light);
+            font-size: 12px;
+            font-weight: 700;
+            letter-spacing: 2px;
+            text-transform: uppercase;
+        }
+
+        .report-kicker {
+            color: var(--blue-light);
+            font-size: 12px;
+            font-weight: 700;
+            letter-spacing: 2px;
+            text-transform: uppercase;
+        }
+
+        .response-title,
+        .report-title {
+            margin-top: 9px;
+            color: #fff;
+            font-size: 27px;
+            font-weight: 700;
+        }
+
+        .response-description,
+        .report-summary {
+            margin-top: 11px;
+            color: #b9cbd6;
+            font-size: 14px;
+            line-height: 1.8;
+        }
+
+        .response-buttons {
+            display: flex;
+            justify-content: center;
+            gap: 13px;
+            margin-top: 22px;
+        }
+
+        .response-button,
+        .report-close {
+            height: 45px;
+            min-width: 145px;
+            padding: 0 22px;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 14px;
+            font-weight: 700;
+            letter-spacing: 1px;
+            transition: transform 0.2s;
+        }
+
+        .response-button:hover {
+            transform: translateY(-1px);
+        }
+
+        .block-button {
+            border: 1px solid #bf3048;
+            background: #2e0e17;
+            color: #ff91a0;
+        }
+
+        .allow-button {
+            border: 1px solid #267fa6;
+            background: #082032;
+            color: #86d5ff;
+        }
+
+        .report-close {
+            margin-top: 20px;
+            height: 40px;
+            padding: 0 20px;
+            border: 1px solid #245d80;
+            background: #071725;
+            color: #aed4e9;
+            font-size: 12px;
+        }
+
+        .sim-info {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            border-top: 1px solid var(--border-soft);
+            padding: 14px 21px;
+            color: #839aaa;
+            font-size: 12px;
+        }
+
+        .sim-info strong {
+            color: #b0c8d7;
+            font-size: 12px;
+        }
+
+        /* Media Queries */
+        @media(max-width:1100px) {
+            .station-container {
+                grid-template-columns: repeat(3, 1fr);
+                row-gap: 20px;
+            }
+
+            .pipeline {
+                height: 470px;
+            }
+
+            .result,
+            .config-panel {
+                grid-template-columns: 1fr;
+            }
+        }
+
+        @media(max-width:700px) {
+            .app {
+                width: 94%;
+                padding-top: 18px;
+            }
+
+            .system-status {
+                display: none;
+            }
+
+            .upload-section {
+                padding: 22px;
+            }
+
+            .upload-title {
+                font-size: 28px;
+            }
+
+            .upload-description {
+                font-size: 14px;
+            }
+
+            .analyze-button,
+            .attack-button,
+            .response-button {
+                width: 100%;
+            }
+
+            .attack-selector,
+            .response-buttons {
+                flex-direction: column;
+                align-items: stretch;
+            }
+
+            .pipeline {
+                height: 620px;
+            }
+
+            .station-container {
+                grid-template-columns: repeat(2, 1fr);
+                row-gap: 12px;
+            }
+        }
+    </style>
+</head>
+
+<body>
+    <div class="app">
+        <!-- HEADER -->
+        <header class="header">
+            <div class="brand">
+                <div class="logo">◈</div>
+                <div>
+                    <div class="brand-title">NETWORK SECURITY ANALYZER</div>
+                    <div class="brand-subtitle">Packet Intelligence & Threat Detection</div>
+                </div>
+            </div>
+            <div class="system-status">
+                <span class="status-dot"></span> ANALYZER ONLINE
+            </div>
+        </header>
+
+        <!-- UPLOAD SECTION -->
+        <section class="upload-section">
+            <div class="upload-intro">
+                <div class="upload-label">START ANALYSIS</div>
+                <div class="upload-title">Analyze your network traffic</div>
+                <div class="upload-description">
+                    Upload a packet capture to inspect traffic, detect suspicious behavior, collect evidence, generate
+                    alerts and build a security report.
+                </div>
+            </div>
+
+            <label class="drop-zone" id="dropZone" for="fileInput">
+                <div>
+                    <div class="upload-icon">↑</div>
+                    <div class="drop-title">Drop your PCAP file here</div>
+                    <div class="drop-subtitle">PCAP / PCAPNG files supported</div>
+                    <div class="file-name" id="fileName"></div>
+                </div>
+            </label>
+            <input type="file" id="fileInput" accept=".pcap,.pcapng">
+
+            <button class="analyze-button" id="analyzeButton" disabled>START ANALYSIS</button>
+
+            <div class="config-panel">
+                <div class="config-box">
+                    <div class="config-box-title">Active Detection Engines</div>
+                    <div class="engine-tags">
+                        <span class="engine-tag">HTTP Flood</span>
+                        <span class="engine-tag">Port Scanning</span>
+                        <span class="engine-tag">ICMP Flood</span>
+                        <span class="engine-tag">SYN Flood</span>
+                    </div>
+                </div>
+                <div class="config-box">
+                    <div class="config-box-title">Analysis Preferences</div>
+                    <div class="options-list">
+                        <div class="option-item">
+                            <span>Deep Packet Inspection (DPI)</span>
+                            <label class="switch">
+                                <input type="checkbox" checked>
+                                <span class="slider"></span>
+                            </label>
+                        </div>
+                        <div class="option-item">
+                            <span>Extract Payloads & Artifacts</span>
+                            <label class="switch">
+                                <input type="checkbox" checked>
+                                <span class="slider"></span>
+                            </label>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- RESULT CARDS -->
+        <section class="result">
+            <div class="card">
+                <div class="card-header">
+                    <div class="card-title">SECURITY RESULT</div>
+                    <div class="card-status" id="threatStatus">NORMAL</div>
+                </div>
+                <div class="threat-body">
+                    <div class="threat-title" id="threatTitle">NORMAL TRAFFIC</div>
+                    <div class="threat-subtitle" id="threatSubtitle">Normal traffic is currently flowing through the
+                        analyzer.</div>
+
+                    <div class="threat-score">
+                        <div class="score-circle" id="scoreCircle">
+                            <strong id="scoreValue">0</strong>
+                        </div>
+                        <div>
+                            <div class="score-label">THREAT SCORE</div>
+                            <div class="score-description" id="scoreText">No suspicious behavior</div>
+                        </div>
+                    </div>
+
+                    <div class="details">
+                        <div class="detail"><span>Attack</span><strong id="attackValue">None</strong></div>
+                        <div class="detail"><span>Source</span><strong id="sourceValue">Normal Traffic</strong></div>
+                        <div class="detail"><span>Persistence</span><strong id="persistenceValue">Normal</strong></div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="card">
+                <div class="card-header">
+                    <div class="card-title">SECURITY REPORT</div>
+                    <div class="card-status" id="reportStatus">NORMAL</div>
+                </div>
+                <div class="report-body">
+                    <div class="report-text active" id="reportText">
+                        Normal network traffic is moving through the analyzer at a steady rate. No suspicious event is
+                        currently being simulated.
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- ACTIVITY LOG -->
+        <section class="activity">
+            <div class="card-header">
+                <div class="card-title">ANALYSIS ACTIVITY</div>
+                <div class="card-status" id="activityStatus">LIVE</div>
+            </div>
+            <div class="activity-list" id="activityList">
+                <div class="activity-item">
+                    <div class="activity-time">NOW</div>
+                    <div class="activity-dot"></div>
+                    <div class="activity-text"><strong>Normal traffic active.</strong> Packets are moving through the
+                        analyzer.</div>
+                </div>
+            </div>
+        </section>
+
+        <!-- INTERACTIVE SIMULATION -->
+        <section class="simulation">
+            <div class="sim-header">
+                <div class="sim-title">INTERACTIVE PACKET SIMULATION</div>
+                <div class="sim-badge">VISUAL MODE</div>
+            </div>
+            <div class="sim-explanation">
+                <div class="sim-explanation-title">Visual Representation</div>
+                <div class="sim-explanation-text">
+                    This area visually represents how packets move through the analyzer. Normal traffic moves steadily
+                    in sequence. Attack traffic enters in larger bursts. Suspicious packets turn red when Detection
+                    identifies abnormal behavior. This is a demonstration only.
+                </div>
+            </div>
+            <div class="attack-selector">
+                <span class="selector-label">Choose Traffic</span>
+                <button class="attack-button active" data-attack="normal">NORMAL TRAFFIC</button>
+                <button class="attack-button" data-attack="http-flood">HTTP FLOOD</button>
+                <button class="attack-button" data-attack="port-scan">PORT SCAN</button>
+                <button class="attack-button" data-attack="icmp-flood">ICMP FLOOD</button>
+            </div>
+
+            <div class="pipeline-wrapper">
+                <div class="pipeline" id="pipeline">
+                    <div class="packet-layer" id="packetLayer"></div>
+                    <div class="station-container">
+                        <div class="station" data-stage="parser">
+                            <div class="station-node">01</div>
+                            <div class="station-name">PARSER</div>
+                            <div class="station-desc">Decode packet structure</div>
+                            <div class="station-state">WAITING</div>
+                        </div>
+                        <div class="station" data-stage="tracker">
+                            <div class="station-node">02</div>
+                            <div class="station-name">TRACKER</div>
+                            <div class="station-desc">Measure traffic behavior</div>
+                            <div class="station-state">WAITING</div>
+                        </div>
+                        <div class="station" data-stage="detection">
+                            <div class="station-node">03</div>
+                            <div class="station-name">DETECTION</div>
+                            <div class="station-desc">Evaluate suspicious patterns</div>
+                            <div class="station-state">WAITING</div>
+                        </div>
+                        <div class="station" data-stage="evidence">
+                            <div class="station-node">04</div>
+                            <div class="station-name">EVIDENCE</div>
+                            <div class="station-desc">Collect security evidence</div>
+                            <div class="station-state">WAITING</div>
+                        </div>
+                        <div class="station" data-stage="alert">
+                            <div class="station-node">05</div>
+                            <div class="station-name">ALERT</div>
+                            <div class="station-desc">Create security alert</div>
+                            <div class="station-state">WAITING</div>
+                        </div>
+                        <div class="station" data-stage="report">
+                            <div class="station-node">06</div>
+                            <div class="station-name">REPORT</div>
+                            <div class="station-desc">Explain what happened</div>
+                            <div class="station-state">WAITING</div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="response-overlay" id="responseOverlay">
+                    <div class="response-box">
+                        <div class="response-kicker">THREAT DETECTED</div>
+                        <div class="response-title" id="responseTitle">HTTP FLOOD</div>
+                        <div class="response-description">
+                            Suspicious traffic has been detected. The analysis pipeline is waiting for the analyst
+                            response. Choose BLOCK or ALLOW.
+                        </div>
+                        <div class="response-buttons">
+                            <button class="response-button block-button" id="blockButton">BLOCK</button>
+                            <button class="response-button allow-button" id="allowButton">ALLOW</button>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="report-overlay" id="reportOverlay">
+                    <div class="report-box">
+                        <div class="report-kicker">SECURITY REPORT</div>
+                        <div class="report-title" id="overlayReportTitle">HTTP FLOOD — BLOCK</div>
+                        <div class="report-summary" id="overlayReportSummary"></div>
+                        <button class="report-close" id="reportClose">CLOSE REPORT</button>
+                    </div>
+                </div>
+            </div>
+
+            <div class="sim-info">
+                <span>Visual simulation only.</span>
+                <strong id="simulationStatus">NORMAL TRAFFIC</strong>
+            </div>
+        </section>
+    </div>
+
+    <!-- JAVASCRIPT LOGIC -->
+    <script>
+        // --- DOM ELEMENTS ---
+        const fileInput = document.getElementById("fileInput");
+        const dropZone = document.getElementById("dropZone");
+        const fileName = document.getElementById("fileName");
+        const analyzeButton = document.getElementById("analyzeButton");
+        const packetLayer = document.getElementById("packetLayer");
+        const simulationStatus = document.getElementById("simulationStatus");
+        const threatStatus = document.getElementById("threatStatus");
+        const threatTitle = document.getElementById("threatTitle");
+        const threatSubtitle = document.getElementById("threatSubtitle");
+        const scoreCircle = document.getElementById("scoreCircle");
+        const scoreValue = document.getElementById("scoreValue");
+        const scoreText = document.getElementById("scoreText");
+        const attackValue = document.getElementById("attackValue");
+        const sourceValue = document.getElementById("sourceValue");
+        const persistenceValue = document.getElementById("persistenceValue");
+        const reportStatus = document.getElementById("reportStatus");
+        const reportText = document.getElementById("reportText");
+        const activityStatus = document.getElementById("activityStatus");
+        const activityList = document.getElementById("activityList");
+        const stations = document.querySelectorAll(".station");
+        const attackButtons = document.querySelectorAll(".attack-button");
+        const pipeline = document.getElementById("pipeline");
+        const responseOverlay = document.getElementById("responseOverlay");
+        const responseTitle = document.getElementById("responseTitle");
+        const reportOverlay = document.getElementById("reportOverlay");
+        const overlayReportTitle = document.getElementById("overlayReportTitle");
+        const overlayReportSummary = document.getElementById("overlayReportSummary");
+        const blockButton = document.getElementById("blockButton");
+        const allowButton = document.getElementById("allowButton");
+        const reportClose = document.getElementById("reportClose");
+
+        // --- STATE VARIABLES ---
+        let simulationId = 0;
+        let normalTimer = null;
+        let currentScenario = "normal";
+        let waitingForResponse = false;
+
+        // --- HELPER FUNCTIONS ---
+        const delay = (ms) => new Promise(resolve => setTimeout(resolve, ms));
+
+        function addActivity(title, message) {
+            const item = document.createElement("div");
+            item.className = "activity-item";
+            item.innerHTML = `
+                <div class="activity-time">NOW</div>
+                <div class="activity-dot"></div>
+                <div class="activity-text"><strong>${title}</strong> ${message}</div>
+            `;
+            activityList.prepend(item);
+            if (activityList.children.length > 8) {
+                activityList.removeChild(activityList.lastChild);
+            }
+        }
+
+        function updateScore(score) {
+            const degrees = Math.min(score, 5) / 5 * 360;
+            scoreCircle.style.background = `
+                radial-gradient(circle, var(--panel-bg) 58%, transparent 60%),
+                conic-gradient(var(--blue-main) ${degrees}deg, #0b263b ${degrees}deg)
+            `;
+        }
+
+        function setStageState(stage, stateClass, text) {
+            const station = document.querySelector(`.station[data-stage="${stage}"]`);
+            if (!station) return;
+            station.className = `station ${stateClass}`;
+            station.querySelector(".station-state").textContent = text;
+        }
+
+        function resetStations() {
+            stations.forEach(station => {
+                station.className = "station";
+                station.querySelector(".station-state").textContent = "WAITING";
+            });
+        }
+
+        function getAttackName(type) {
+            const names = { "http-flood": "HTTP FLOOD", "port-scan": "PORT SCAN", "icmp-flood": "ICMP FLOOD" };
+            return names[type] || "ATTACK";
+        }
+
+        // --- FILE UPLOAD HANDLING ---
+        function handleFileSelection(files) {
+            if (!files || !files.length) return;
+            fileName.textContent = files[0].name;
+            analyzeButton.disabled = false;
+        }
+
+        fileInput.addEventListener("change", () => handleFileSelection(fileInput.files));
+
+        ["dragenter", "dragover"].forEach(event => {
+            dropZone.addEventListener(event, (e) => { e.preventDefault(); dropZone.classList.add("dragging"); });
+        });
+
+        ["dragleave", "drop"].forEach(event => {
+            dropZone.addEventListener(event, (e) => { e.preventDefault(); dropZone.classList.remove("dragging"); });
+        });
+
+        dropZone.addEventListener("drop", (e) => {
+            const files = e.dataTransfer.files;
+            if (files.length) {
+                fileInput.files = e.dataTransfer.files;
+                handleFileSelection(files);
+            }
+        });
+
+        // --- SIMULATION CONTROLS ---
+        function createPacket(isAttack) {
+            const packet = document.createElement("div");
+            packet.className = "packet";
+            packet.innerHTML = `<span class="packet-type">HTTP</span><span class="packet-label">GET /</span>`;
+            packet.style.top = isAttack ? `${128 + Math.random() * 38}px` : "145px";
+            packet.style.left = "-25px";
+            packetLayer.appendChild(packet);
+            return packet;
+        }
+
+        async function movePacket(packet, isAttack, token) {
+            const positions = [7, 25, 43, 61, 79, 95];
+            const stages = ["parser", "tracker", "detection", "evidence", "alert", "report"];
+
+            packet.classList.add("visible");
+
+            for (let i = 0; i < positions.length; i++) {
+                if (token !== simulationId) { packet.remove(); return; }
+                packet.style.left = `${positions[i]}%`;
+                packet.style.top = "27%";
+                await delay(350);
+
+                if (token !== simulationId) { packet.remove(); return; }
+                setStageState(stages[i], "active", "PROCESSING");
+                await delay(350);
+
+                if (i === 2 && isAttack) {
+                    packet.classList.add("hit");
+                    await delay(350);
+                    packet.classList.add("suspicious");
+                    packet.classList.remove("hit");
+                    setStageState("detection", "danger", "THREAT");
+                } else {
+                    setStageState(stages[i], "active", "COMPLETE");
+                }
+            }
+            packet.style.opacity = "0";
+            await delay(350);
+            packet.remove();
+        }
+
+        function stopSimulation() {
+            simulationId++;
+            clearTimeout(normalTimer);
+            normalTimer = null;
+            packetLayer.innerHTML = "";
+            resetStations();
+        }
+
+        function startNormalTraffic() {
+            stopSimulation();
+            currentScenario = "normal";
+            waitingForResponse = false;
+            document.body.classList.remove("attack");
+            responseOverlay.classList.remove("show");
+            reportOverlay.classList.remove("show");
+            pipeline.classList.remove("paused");
+            simulationStatus.textContent = "NORMAL TRAFFIC";
+
+            const token = simulationId;
+            (function spawn() {
+                if (token !== simulationId) return;
+                movePacket(createPacket(false), false, token);
+                normalTimer = setTimeout(spawn, 800);
+            })();
+        }
+
+        async function startAttack(type) {
+            stopSimulation();
+            currentScenario = type;
+            waitingForResponse = false;
+            responseOverlay.classList.remove("show");
+            reportOverlay.classList.remove("show");
+            pipeline.classList.remove("paused");
+            document.body.classList.remove("attack");
+
+            const token = simulationId;
+            simulationStatus.textContent = getAttackName(type);
+
+            const config = { "port-scan": { count: 15, interval: 200 }, "icmp-flood": { count: 22, interval: 120 } };
+            const { count, interval } = config[type] || { count: 15, interval: 135 };
+
+            for (let i = 0; i < count; i++) {
+                if (token !== simulationId) return;
+                setTimeout(() => {
+                    if (token === simulationId) movePacket(createPacket(true), true, token);
+                }, i * interval);
+            }
+
+            await delay(6200);
+            if (token !== simulationId) return;
+
+            waitingForResponse = true;
+            document.body.classList.add("attack");
+            simulationStatus.textContent = `${getAttackName(type)} DETECTED`;
+            pipeline.classList.add("paused");
+            responseTitle.textContent = getAttackName(type);
+            responseOverlay.classList.add("show");
+        }
+
+        // --- OVERLAY INTERACTION ---
+        async function continueAfterResponse(action) {
+            setStageState("evidence", "active", "COMPLETE");
+            await delay(80);
+            setStageState("alert", "danger", "THREAT");
+            await delay(80);
+            setStageState("report", "active", "COMPLETE");
+            await delay(120);
+
+            const name = getAttackName(currentScenario);
+            overlayReportTitle.textContent = `${name} — ${action}`;
+            overlayReportSummary.textContent = `The analyzer simulated a ${name} event. Suspicious traffic entered the pipeline and was detected. Analyst selected ${action}.`;
+            reportOverlay.classList.add("show");
+        }
+
+        blockButton.addEventListener("click", () => {
+            if (!waitingForResponse) return;
+            waitingForResponse = false;
+            responseOverlay.classList.remove("show");
+            pipeline.classList.remove("paused");
+            continueAfterResponse("BLOCK");
+        });
+
+        allowButton.addEventListener("click", () => {
+            if (!waitingForResponse) return;
+            waitingForResponse = false;
+            responseOverlay.classList.remove("show");
+            pipeline.classList.remove("paused");
+            continueAfterResponse("ALLOW");
+        });
+
+        reportClose.addEventListener("click", () => reportOverlay.classList.remove("show"));
+
+        attackButtons.forEach(btn => {
+            btn.addEventListener("click", () => {
+                attackButtons.forEach(b => b.classList.remove("active"));
+                btn.classList.add("active");
+                const selected = btn.dataset.attack;
+                if (selected === "normal") startNormalTraffic();
+                else startAttack(selected);
+            });
+        });
+
+        // --- REAL API ANALYSIS HANDLER ---
+        analyzeButton.addEventListener("click", async () => {
+            if (!fileInput.files.length) return;
+
+            stopSimulation();
+            responseOverlay.classList.remove("show");
+            reportOverlay.classList.remove("show");
+            pipeline.classList.remove("paused");
+
+            analyzeButton.disabled = true;
+            simulationStatus.textContent = "REAL ANALYSIS";
+            activityStatus.textContent = "RUNNING";
+            addActivity("Real analysis started.", "Processing uploaded PCAP file...");
+
+            try {
+                const formData = new FormData();
+                formData.append("file", fileInput.files[0]);
+
+                const response = await fetch("/api/analyze", { method: "POST", body: formData });
+                const result = await response.json();
+
+                if (!result.success) throw new Error(result.error || "Analysis failed.");
+
+                if (result.confirmed) {
+                    document.body.classList.add("attack");
+                    setStageState("parser", "active", "COMPLETE");
+                    setStageState("tracker", "active", "COMPLETE");
+                    setStageState("detection", "danger", "THREAT");
+                    setStageState("evidence", "active", "COMPLETE");
+                    setStageState("alert", "danger", "THREAT");
+                    setStageState("report", "active", "COMPLETE");
+
+                    simulationStatus.textContent = "THREAT CONFIRMED";
+                    activityStatus.textContent = "THREAT";
+                    threatStatus.textContent = "CONFIRMED";
+                    threatTitle.textContent = result.attack || "HTTP FLOOD";
+                    threatSubtitle.textContent = "Real PCAP analysis confirmed suspicious traffic.";
+
+                    scoreValue.textContent = result.score ?? 0;
+                    updateScore(result.score ?? 0);
+                    scoreText.textContent = `${result.severity || "HIGH"} severity`;
+
+                    attackValue.textContent = result.attack || "HTTP Flood";
+                    sourceValue.textContent = result.source_ip || "Unknown";
+                    persistenceValue.textContent = "CONFIRMED";
+
+                    reportStatus.textContent = "GENERATED";
+                    reportText.textContent = result.report || "No report generated.";
+                    reportText.classList.add("active");
+
+                    addActivity("Threat confirmed.", `${result.attack || "HTTP Flood"} detected.`);
+                    addActivity("Report generated.", "Security analysis finalized.");
+                } else {
+                    document.body.classList.remove("attack");
+                    simulationStatus.textContent = "ANALYSIS COMPLETE";
+                    activityStatus.textContent = "COMPLETE";
+                    threatStatus.textContent = "NORMAL";
+                    threatTitle.textContent = "NORMAL TRAFFIC";
+                    threatSubtitle.textContent = result.message || "No threat detected.";
+
+                    scoreValue.textContent = "0";
+                    updateScore(0);
+                    scoreText.textContent = "No suspicious behavior";
+
+                    attackValue.textContent = "None";
+                    sourceValue.textContent = "Normal Traffic";
+                    persistenceValue.textContent = "NORMAL";
+
+                    reportStatus.textContent = "GENERATED";
+                    reportText.textContent = result.report || result.message || "No threat detected.";
+                    reportText.classList.add("active");
+
+                    addActivity("Analysis completed.", result.message || "No threat detected.");
+                }
+            } catch (error) {
+                simulationStatus.textContent = "ERROR";
+                activityStatus.textContent = "ERROR";
+                reportStatus.textContent = "ERROR";
+                reportText.textContent = error.message;
+                addActivity("Analysis failed.", error.message);
+            } finally {
+                analyzeButton.disabled = false;
+            }
+        });
+
+        // --- INIT ---
+        updateScore(0);
+        setTimeout(startNormalTraffic, 500);
+    </script>
+</body>
+
+</html>
