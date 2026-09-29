@@ -4,7 +4,6 @@ class DetectionEngine:
 
         self.allowed_gap = allowed_gap
 
-        # State لكل Source IP
         self.states = {}
 
     def _calculate_severity(self, status, window_count):
