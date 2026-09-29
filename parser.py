@@ -1,7 +1,6 @@
 from typing import Any, Dict, List, Optional
 from scapy.all import ICMP, IP, TCP, UDP, Packet, rdpcap
 
-# قائمة أساليب طلبات HTTP
 HTTP_METHODS = ["GET ", "POST ", "PUT ", "DELETE ", "HEAD ", "OPTIONS ", "PATCH "]
 
 
