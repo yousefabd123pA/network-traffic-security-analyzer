@@ -10,7 +10,6 @@ class AlertManager:
         if detection is None:
             return None
 
-        # لا يتم إنشاء Alert للـ NORMAL
         if not detection.get("alert", False):
             return None
 
